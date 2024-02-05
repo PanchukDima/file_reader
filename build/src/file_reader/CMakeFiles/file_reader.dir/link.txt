@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -L/usr/lib64 -L/usr/lib64 -Wl,--as-needed -Wl,-rpath,'/opt/pgpro/std-16/lib',--enable-new-dtags  -L/opt/pgpro/std-16/lib -L/opt/pgpro/std-16/lib -shared  -o file_reader.so CMakeFiles/file_reader.dir/file_reader.c.o 
