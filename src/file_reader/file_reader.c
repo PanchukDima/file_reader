@@ -123,7 +123,7 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         doc = xmlReadFile(p_filename, NULL, 0);
 
         if (doc == NULL) {
-          elog(NOTICE,"Could not parse the XML file");
+            elog(NOTICE,"Could not parse the XML file");
         }
 
         xmlXPathContextPtr xPathCtx = xmlXPathNewContext(doc);
@@ -136,9 +136,7 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         }
 
         xmlNodeSetPtr nodeset = xpathObj->nodesetval;
-
         funcctx->max_calls = xmlXPathNodeSetGetLength(nodeset);
-
         words = (char***)palloc(funcctx->max_calls * sizeof(char**));
 
         for (int i = 0; i < funcctx->max_calls; ++i) {
@@ -175,14 +173,10 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         }
         else
         {
-          elog(NOTICE, "Failed to find nodes using: \n");
+            elog(NOTICE, "Failed to find nodes using: \n");
         }
-
         xmlFreeDoc(doc);
-
         xmlCleanupParser();
-
-
         MemoryContextSwitchTo(oldcontext);
 
 
@@ -205,12 +199,7 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         Datum	   key_datums;
         bool	   key_nulls;
         int			elem_count;
-
-
-
         deconstruct_array_builtin(xpathes, TEXTOID, &key_datums, &key_nulls, &elem_count);
-
-        //values = (char **) palloc(elem_count * sizeof(char *));
 
         bool		nulls[elem_count];
         Datum       value_t[elem_count];
