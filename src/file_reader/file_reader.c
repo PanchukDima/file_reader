@@ -117,8 +117,8 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
 
         attinmeta = TupleDescGetAttInMetadata(tupdesc);
         funcctx->attinmeta = attinmeta;
+        funcctx->tuple_desc = tupdesc;
 
-        elog(NOTICE, "Read xml File %s",p_filename);
 
         doc = xmlReadFile(p_filename, NULL, 0);
 
@@ -137,7 +137,6 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
 
         xmlNodeSetPtr nodeset = xpathObj->nodesetval;
 
-        elog(NOTICE, "Size file: %d",xmlXPathNodeSetGetLength(nodeset));
         funcctx->max_calls = xmlXPathNodeSetGetLength(nodeset);
 
         words = (char***)palloc(funcctx->max_calls * sizeof(char**));
@@ -162,8 +161,6 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
                     char * data = (char *)getValue(xPathCtx, xpathdata);
                     if(data == NULL)
                     {
-                        elog(NOTICE,"DATA is NULL");
-                        //words[i][j] = (char *) palloc(charCount * sizeof(char));
                         words[i][j] = NULL;
 
                     }
@@ -197,75 +194,42 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
     max_calls = funcctx->max_calls;
     attinmeta = funcctx->attinmeta;
     words = funcctx->user_fctx;
+    tupdesc = funcctx->tuple_desc;
 
     if (call_cntr < max_calls)
     {
-        char       **values;
         HeapTuple    tuple;
         Datum        result;
 
-
-
-
-
-
         ArrayType* xpathes = PG_GETARG_ARRAYTYPE_P_COPY(2);
-        Datum	   *key_datums;
-        bool	   *key_nulls;
+        Datum	   key_datums;
+        bool	   key_nulls;
         int			elem_count;
+
+
 
         deconstruct_array_builtin(xpathes, TEXTOID, &key_datums, &key_nulls, &elem_count);
 
-        values = (char **) palloc(elem_count * sizeof(char *));
+        //values = (char **) palloc(elem_count * sizeof(char *));
 
         bool		nulls[elem_count];
         Datum       value_t[elem_count];
 
         for(int i = 0; i<elem_count;i++)
         {
-            /*value_t[i] = (char *) palloc(charCount * sizeof(char));*/
-            if(words[call_cntr][i] != NULL){
-                values[i] = (char *) palloc(charCount * sizeof(char));
-
-                snprintf(values[i], charCount, "%s", words[call_cntr][i]);
+            if(words[call_cntr][i] != NULL)
+            {
+                value_t[i] = cstring_to_text(words[call_cntr][i]);
+                nulls[i] = false;
             }
             else
             {
-                elog(NOTICE, "Write data null");
-                values[i] = (char *) palloc(sizeof(char));
-                snprintf(values[i], "%s" , cstring_to_text("NULL"));
+                nulls[i] = true;
             }
-
-            value_t[i] = Int32GetDatum(1);
-            nulls[i] = false;
-
-
         }
-
-        elog(NOTICE, "Heap from tuple");
-        //tuple = heap_form_tuple(tupdesc, value_t, nulls);
-        elog(NOTICE, "HeapTuple Get Datum");
-        //result =
-
-        /* build a tuple */
-        tuple = BuildTupleFromCStrings(attinmeta, values);
-
-        /* make the tuple into a datum */
+        tuple = heap_form_tuple(tupdesc, value_t, nulls);
         result = HeapTupleGetDatum(tuple);
-
-        /* clean up (this is not really necessary) */
-
-
-        for(int i = 0; i<elem_count;i++)
-        {
-
-            pfree(values[i]);
-        }
-
-        pfree(values);
-
         pfree(words[call_cntr]);
-        elog(NOTICE, "Clear old");
         SRF_RETURN_NEXT(funcctx, result);
     }
     else
@@ -286,7 +250,6 @@ xmlChar* getValue(xmlXPathContextPtr xPathCtx, char* xPath)
     xmlNodePtr node_uid = xmlXPathNodeSetItem(nodeset_uid, 0);
     if(node_uid == 0x0)
     {
-        elog(NOTICE,"Return NULL");
         return NULL;
     }
     return xmlNodeGetContent(node_uid);
