@@ -85,7 +85,6 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
     snprintf(p_xpathArray, VARSIZE_ANY_EXHDR(xpathArray)+1, "%s", VARDATA_ANY(xpathArray));
 
     xmlDoc *doc = NULL;
-    xmlNode *root_element = NULL;
 
     int charCount = 32;
 
@@ -106,11 +105,8 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
 
         deconstruct_array_builtin(xpathes, TEXTOID, &key_datums, &key_nulls, &elem_count);
 
-
         funcctx = SRF_FIRSTCALL_INIT();
         oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
-
-
 
         if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
             elog(ERROR, "return type must be a row type");
@@ -118,7 +114,6 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         attinmeta = TupleDescGetAttInMetadata(tupdesc);
         funcctx->attinmeta = attinmeta;
         funcctx->tuple_desc = tupdesc;
-
 
         doc = xmlReadFile(p_filename, NULL, 0);
 
@@ -128,7 +123,6 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
 
         xmlXPathContextPtr xPathCtx = xmlXPathNewContext(doc);
         xPathCtx->node = xmlDocGetRootElement(doc);
-
 
         xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((xmlChar*)p_xpathArray, xPathCtx);
         if(xpathObj == NULL){
@@ -149,7 +143,6 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
             for(int i=0; i<xmlXPathNodeSetGetLength(nodeset); i++)
             {
                 xmlNodePtr node = xmlXPathNodeSetItem(nodeset,i);
-
                 xPathCtx->node = node;
                 for(int j=0; j<elem_count; j++)
                 {
@@ -178,8 +171,6 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         xmlFreeDoc(doc);
         xmlCleanupParser();
         MemoryContextSwitchTo(oldcontext);
-
-
     }
 
     funcctx = SRF_PERCALL_SETUP();
