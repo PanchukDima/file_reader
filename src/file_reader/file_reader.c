@@ -21,7 +21,7 @@
 
 #include "file_reader.h"
 
-#include <postgres.h>
+//#include <postgres.h>
 #include <fmgr.h>
 
 
