@@ -103,7 +103,9 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         bool	   *key_nulls;
         int			elem_count;
 
-        deconstruct_array_builtin(xpathes, TEXTOID, &key_datums, &key_nulls, &elem_count);
+        //deconstruct_array_builtin(xpathes, TEXTOID, &key_datums, &key_nulls, &elem_count);
+        deconstruct_array(xpathes, TEXTOID, -1, false, TYPALIGN_INT,&key_datums, &key_nulls, &elem_count);
+
 
         funcctx = SRF_FIRSTCALL_INIT();
         oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
@@ -190,7 +192,9 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         Datum	   key_datums;
         bool	   key_nulls;
         int			elem_count;
-        deconstruct_array_builtin(xpathes, TEXTOID, &key_datums, &key_nulls, &elem_count);
+
+        //deconstruct_array_builtin(xpathes, TEXTOID, -1, false, TYPALIGN_INT, &key_datums, &key_nulls, &elem_count);
+        deconstruct_array(xpathes, TEXTOID, -1, false, TYPALIGN_INT, &key_datums, &key_nulls, &elem_count);
 
         bool		nulls[elem_count];
         Datum       value_t[elem_count];
