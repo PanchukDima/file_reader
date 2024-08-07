@@ -77,13 +77,20 @@ PG_FUNCTION_INFO_V1(read_xml_file);
 Datum read_xml_file(PG_FUNCTION_ARGS) {
     text *filename = PG_GETARG_TEXT_PP(0);
     text *xpathArray = PG_GETARG_TEXT_PP(1);
-
+    FILE * fp;
     char *p_filename[VARSIZE_ANY_EXHDR(filename)];
     snprintf(p_filename, VARSIZE_ANY_EXHDR(filename)+1, "%s", VARDATA_ANY(filename));
 
+    fp = fopen(p_filename, "rb");
+    if (!fp)    // если не удалось открыть файл
+    {
+      elog(WARNING,"Error occured while opening file \n");
+
+    }
+
     char *p_xpathArray[VARSIZE_ANY_EXHDR(xpathArray)];
     snprintf(p_xpathArray, VARSIZE_ANY_EXHDR(xpathArray)+1, "%s", VARDATA_ANY(xpathArray));
-
+    elog(NOTICE, p_xpathArray);
     xmlDoc *doc = NULL;
 
     int charCount = 32;
@@ -130,45 +137,47 @@ Datum read_xml_file(PG_FUNCTION_ARGS) {
         if(xpathObj == NULL){
             elog(NOTICE,"Failed to evaluate xpath\n");
         }
+        else{
 
-        xmlNodeSetPtr nodeset = xpathObj->nodesetval;
-        funcctx->max_calls = xmlXPathNodeSetGetLength(nodeset);
-        words = (char***)palloc(funcctx->max_calls * sizeof(char**));
+          xmlNodeSetPtr nodeset = xpathObj->nodesetval;
+          funcctx->max_calls = xmlXPathNodeSetGetLength(nodeset);
+          words = (char***)palloc(funcctx->max_calls * sizeof(char**));
 
-        for (int i = 0; i < funcctx->max_calls; ++i) {
-            words[i] = (char**)palloc(elem_count * sizeof(char*));
-        }
+          for (int i = 0; i < funcctx->max_calls; ++i) {
+              words[i] = (char**)palloc(elem_count * sizeof(char*));
+          }
 
-        if(!xmlXPathNodeSetIsEmpty(nodeset)){
-            printf("Found nodes using: \n");
+          if(!xmlXPathNodeSetIsEmpty(nodeset)){
+              printf("Found nodes using: \n");
 
-            for(int i=0; i<xmlXPathNodeSetGetLength(nodeset); i++)
-            {
-                xmlNodePtr node = xmlXPathNodeSetItem(nodeset,i);
-                xPathCtx->node = node;
-                for(int j=0; j<elem_count; j++)
-                {
-                    char *xpathdata[VARSIZE_ANY_EXHDR(key_datums[j])];
-                    snprintf(xpathdata, VARSIZE_ANY_EXHDR(key_datums[j])+1 , "%s", VARDATA_ANY(key_datums[j]));
+              for(int i=0; i<xmlXPathNodeSetGetLength(nodeset); i++)
+              {
+                  xmlNodePtr node = xmlXPathNodeSetItem(nodeset,i);
+                  xPathCtx->node = node;
+                  for(int j=0; j<elem_count; j++)
+                  {
+                      char *xpathdata[VARSIZE_ANY_EXHDR(key_datums[j])];
+                      snprintf(xpathdata, VARSIZE_ANY_EXHDR(key_datums[j])+1 , "%s", VARDATA_ANY(key_datums[j]));
 
-                    char * data = (char *)getValue(xPathCtx, xpathdata);
-                    if(data == NULL)
-                    {
-                        words[i][j] = NULL;
+                      char * data = (char *)getValue(xPathCtx, xpathdata);
+                      if(data == NULL)
+                      {
+                          words[i][j] = NULL;
 
-                    }
-                    else
-                    {
-                        words[i][j] = (char *) palloc(charCount * sizeof(char));
-                        words[i][j] = data;
-                    }
-                }
-            }
-            funcctx->user_fctx = words;
-        }
-        else
-        {
-            elog(NOTICE, "Failed to find nodes using: \n");
+                      }
+                      else
+                      {
+                          words[i][j] = (char *) palloc(charCount * sizeof(char));
+                          words[i][j] = data;
+                      }
+                  }
+              }
+              funcctx->user_fctx = words;
+          }
+          else
+          {
+              elog(NOTICE, "Failed to find nodes using: \n");
+          }
         }
         xmlFreeDoc(doc);
         xmlCleanupParser();
